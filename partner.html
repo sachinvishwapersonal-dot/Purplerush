@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>BlooRush Partner — Field App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <a href="index.html" class="brand-badge">
+        <span>BlooRush</span>
+        <span class="brand-tag">Partner</span>
+      </a>
+      <div id="authNav" class="nav-links" style="display:none;">
+        <span id="partnerNavName" style="font-size:13px;font-weight:700;color:var(--text-muted);"></span>
+        <button class="nav-btn" onclick="logout()">Log out</button>
+      </div>
+    </header>
+
+    <div id="loginView" style="padding: 40px 20px;">
+      <div style="text-align:center;margin-bottom:24px;">
+        <div style="font-size:44px;margin-bottom:8px;">👷</div>
+        <h1>Partner Login</h1>
+        <p class="sub">Enter your registered mobile number &amp; PIN</p>
+      </div>
+
+      <div class="card">
+        <div class="form-group">
+          <label for="pPhone">Mobile Number</label>
+          <input id="pPhone" type="tel" inputmode="tel" placeholder="e.g. 9876500001" value="9876500001" />
+        </div>
+        <div class="form-group">
+          <label for="pPin">PIN</label>
+          <input id="pPin" type="password" inputmode="numeric" placeholder="1234" value="1234" />
+        </div>
+        <div id="loginErr" style="color:var(--red);font-size:13px;margin-bottom:12px;font-weight:600;"></div>
+        <button class="btn" onclick="doPartnerLogin()">Log In to Partner App</button>
+        
+        <div style="margin-top:16px;padding:10px;background:var(--bg-subtle);border-radius:var(--radius-sm);font-size:12px;color:var(--text-muted);">
+          💡 <strong>Demo Logins:</strong><br/>
+          • 9876500001 (PIN: 1234) — Rajesh (Hindi)<br/>
+          • 9876500002 (PIN: 1234) — Sunita (Marathi)<br/>
+          • 9876500003 (PIN: 1234) — Amit (English)
+        </div>
+      </div>
+    </div>
+
+    <div id="appView" style="display:none;padding: 16px 18px 60px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div>
+          <div id="welcomeMsg" style="font-weight:800;font-size:18px;">Welcome</div>
+          <div id="partnerHubBadge" style="font-size:13px;color:var(--text-muted);">Dharampeth Hub</div>
+        </div>
+        <select id="langSelect" style="width:auto;padding:6px 10px;font-size:13px;" onchange="changeLanguage(this.value)">
+          <option value="en">English</option>
+          <option value="hi">हिंदी (Hindi)</option>
+          <option value="mr">मराठी (Marathi)</option>
+        </select>
+      </div>
+
+      <div class="tabs-bar">
+        <button class="tab-btn active" id="tabJobsBtn" onclick="switchTab('jobs')">📋 My Jobs</button>
+        <button class="tab-btn" id="tabProfileBtn" onclick="switchTab('profile')">👤 Profile &amp; PIN</button>
+      </div>
+
+      <div id="tabJobs">
+        <div class="stats-grid" id="partnerStatsGrid"></div>
+        <h2 id="jobsTodayHeading">Today's Assigned Jobs</h2>
+        <div id="partnerJobsList"></div>
+      </div>
+
+      <div id="tabProfile" style="display:none;">
+        <h2>Partner Profile</h2>
+        <div class="card" id="profileDetailsCard"></div>
+
+        <div class="card">
+          <h3>Security &amp; PIN</h3>
+          <p class="sub">Change your 4-digit mobile login PIN</p>
+          <button class="btn secondary" onclick="changePinPrompt()">Change PIN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="services.js"></script>
+  <script src="data.js"></script>
+  <script>
+    const I18N = {
+      en: {
+        welcome: "Welcome",
+        todaysEarnings: "Today's Earnings",
+        pendingJobs: "Pending Jobs",
+        completedJobs: "Completed Jobs",
+        yourJobsToday: "Today's Assigned Jobs",
+        noJobs: "No jobs assigned for today yet. When customers book, orders will appear here automatically in real time!",
+        address: "Address",
+        timeSlot: "Time Slot",
+        duration: "Estimated Duration",
+        notes: "Instructions",
+        base: "Base Wage",
+        bonus: "Performance Bonus",
+        penalty: "Deductions",
+        netEarnings: "Net Payout",
+        call: "📞 Call Customer",
+        navigate: "🗺️ Navigate GPS",
+        startService: "▶️ Start Service",
+        completeService: "✅ Complete Service",
+        serviceInProgress: "Service in Progress",
+        collectCash: "💵 Collect Cash from Customer",
+        paidOnline: "✅ Already Paid Online (Collect Nothing)",
+        tapToOpen: "tap to expand"
+      },
+      hi: {
+        welcome: "नमस्ते",
+        todaysEarnings: "आज की कमाई",
+        pendingJobs: "बाकी काम",
+        completedJobs: "पूरे किए काम",
+        yourJobsToday: "आज के सौंपे गए काम",
+        noJobs: "आज के लिए अभी कोई काम नहीं है। ग्राहक द्वारा बुकिंग करते ही तुरंत यहाँ आ जाएगा!",
+        address: "ग्राहक का पता",
+        timeSlot: "समय",
+        duration: "अनुमानित समय",
+        notes: "विशेष निर्देश",
+        base: "मूल मजदूरी",
+        bonus: "इंसेंटिव बोनस",
+        penalty: "कटौती",
+        netEarnings: "कुल कमाई",
+        call: "📞 ग्राहक को कॉल करें",
+        navigate: "🗺️ रास्ता देखें (GPS)",
+        startService: "▶️ काम शुरू करें",
+        completeService: "✅ काम पूरा करें",
+        serviceInProgress: "काम जारी है",
+        collectCash: "💵 ग्राहक से नकद प्राप्त करें",
+        paidOnline: "✅ ऑनलाइन भुगतान हो चुका (कुछ न लें)",
+        tapToOpen: "खोलने के लिए टैप करें"
+      },
+      mr: {
+        welcome: "नमस्कार",
+        todaysEarnings: "आजची कमाई",
+        pendingJobs: "बाकी कामे",
+        completedJobs: "पूर्ण झालेली कामे",
+        yourJobsToday: "आजची तुमची कामे",
+        noJobs: "आज अजून कोणतेही काम नाही. ग्राहकाने बुकिंग करताच इथे थेट काम दिसेल!",
+        address: "पत्ता",
+        timeSlot: "वेळ",
+        duration: "अपेक्षित वेळ",
+        notes: "विशेष सूचना",
+        base: "मूळ मजुरी",
+        bonus: "इन्सेंटिव्ह बोनस",
+        penalty: "दंड",
+        netEarnings: "एकूण मोबदला",
+        call: "📞 ग्राहकाला कॉल करा",
+        navigate: "🗺️ रस्ता पहा (GPS)",
+        startService: "▶️ काम सुरू करा",
+        completeService: "✅ काम पूर्ण करा",
+        serviceInProgress: "काम सुरू आहे",
+        collectCash: "💵 ग्राहकाकडून रोख रक्कम घ्या",
+        paidOnline: "✅ ऑनलाइन पेमेंट झाले आहे",
+        tapToOpen: "उघडण्यासाठी टॅप करा"
+      }
+    };
+
+    let currentPartner = null;
+    let currentLang = 'en';
+    let tickerInterval = null;
+
+    function t(key) {
+      return (I18N[currentLang] && I18N[currentLang][key]) || I18N.en[key] || key;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = Store.getCurrentUser();
+      if (user && user.role === 'partner') {
+        currentPartner = user.profile;
+        showApp();
+      }
+
+      Store.subscribe(() => {
+        if (currentPartner) {
+          const fresh = Store.getPartner(currentPartner.partnerId);
+          if (fresh) currentPartner = fresh;
+          renderAll();
+        }
+      });
+
+      tickerInterval = setInterval(updateTimers, 1000);
+    });
+
+    function doPartnerLogin() {
+      const phone = document.getElementById('pPhone').value.trim();
+      const pin = document.getElementById('pPin').value.trim();
+      const err = document.getElementById('loginErr');
+      err.textContent = '';
+
+      try {
+        currentPartner = Store.loginPartner(phone, pin);
+        currentLang = currentPartner.language || 'en';
+        document.getElementById('langSelect').value = currentLang;
+        showApp();
+      } catch (e) {
+        err.textContent = e.message;
+      }
+    }
+
+    function logout() {
+      Store.logout();
+      currentPartner = null;
+      document.getElementById('appView').style.display = 'none';
+      document.getElementById('authNav').style.display = 'none';
+      document.getElementById('loginView').style.display = 'block';
+    }
+
+    function showApp() {
+      document.getElementById('loginView').style.display = 'none';
+      document.getElementById('appView').style.display = 'block';
+      document.getElementById('authNav').style.display = 'flex';
+      document.getElementById('partnerNavName').textContent = currentPartner.name;
+      renderAll();
+    }
+
+    function changeLanguage(lang) {
+      currentLang = lang;
+      renderAll();
+    }
+
+    function switchTab(tab) {
+      document.getElementById('tabJobs').style.display = tab === 'jobs' ? 'block' : 'none';
+      document.getElementById('tabProfile').style.display = tab === 'profile' ? 'block' : 'none';
+      document.getElementById('tabJobsBtn').className = `tab-btn ${tab === 'jobs' ? 'active' : ''}`;
+      document.getElementById('tabProfileBtn').className = `tab-btn ${tab === 'profile' ? 'active' : ''}`;
+    }
+
+    function renderAll() {
+      if (!currentPartner) return;
+      document.getElementById('welcomeMsg').textContent = `${t('welcome')}, ${currentPartner.name}`;
+      document.getElementById('partnerHubBadge').textContent = `${currentPartner.partnerId} · ${currentPartner.hub}`;
+      document.getElementById('jobsTodayHeading').textContent = t('yourJobsToday');
+      renderStats();
+      renderJobs();
+      renderProfile();
+    }
+
+    function renderStats() {
+      const myJobs = Store.getJobsForPartner(currentPartner.partnerId).filter(j => j.date === Store.today());
+      const pending = myJobs.filter(j => j.status !== 'Completed').length;
+      const completed = myJobs.filter(j => j.status === 'Completed').length;
+      const earnings = myJobs.filter(j => j.status === 'Completed').reduce((sum, j) => sum + Store.netEarnings(j), 0);
+
+      document.getElementById('partnerStatsGrid').innerHTML = `
+        <div class="stat-box primary">
+          <div class="label">${t('todaysEarnings')}</div>
+          <div class="value">₹${earnings.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">${t('pendingJobs')}</div>
+          <div class="value">${pending}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">${t('completedJobs')}</div>
+          <div class="value">${completed}</div>
+        </div>
+      `;
+    }
+
+    function renderJobs() {
+      const container = document.getElementById('partnerJobsList');
+      const myJobs = Store.getJobsForPartner(currentPartner.partnerId).filter(j => j.date === Store.today());
+
+      if (myJobs.length === 0) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center;padding:36px 16px;color:var(--text-muted);">
+            <div style="font-size:32px;margin-bottom:8px;">🛋️</div>
+            <div style="font-size:14px;line-height:1.5;">${t('noJobs')}</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = myJobs.map(job => {
+        const isStarted = job.status === 'Started';
+        const isDone = job.status === 'Completed';
+
+        let statusBadge = `<span class="badge blue">Assigned</span>`;
+        if (isStarted) statusBadge = `<span class="badge amber">${t('serviceInProgress')}</span>`;
+        if (isDone) statusBadge = `<span class="badge green">Completed</span>`;
+
+        let actionArea = '';
+        if (job.status === 'Assigned') {
+          actionArea = `<button class="btn" onclick="startJob('${job.jobId}')">${t('startService')}</button>`;
+        } else if (isStarted) {
+          actionArea = `
+            <div id="timer-${job.jobId}" class="timer-display">${elapsedFormatted(job.startedAt)}</div>
+            <button class="btn green" onclick="completeJob('${job.jobId}')">${t('completeService')}</button>
+          `;
+        } else {
+          actionArea = `
+            <div class="card" style="background:#f0fdf4;border-color:#bbf7d0;padding:10px 14px;margin-top:10px;">
+              <div style="font-size:13px;font-weight:700;color:var(--green)">
+                ✅ Service completed (${job.durationMins}m). Net Earnings: ₹${Store.netEarnings(job)}
+              </div>
+              ${job.rating ? `<div style="font-size:13px;margin-top:2px;">Customer Rating: ${job.rating} ★★★★★</div>` : ''}
+            </div>
+          `;
+        }
+
+        const paymentBanner = job.paymentStatus === 'paid'
+          ? `<div style="background:#ecfdf5;color:#065f46;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;margin-bottom:10px;">${t('paidOnline')}</div>`
+          : `<div style="background:#fffbeb;color:#92400e;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;margin-bottom:10px;">${t('collectCash')}: ₹${job.customerPrice}</div>`;
+
+        return `
+          <details class="card" ${isStarted ? 'open' : ''}>
+            <summary>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                  <div style="font-weight:800;font-size:16px;">${job.customerName}</div>
+                  <div style="font-size:13px;color:var(--text-muted);">${job.service}</div>
+                </div>
+                ${statusBadge}
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+                <span style="font-weight:800;color:var(--primary);font-size:15px;">₹${Store.netEarnings(job)} payout</span>
+                <span style="font-size:12px;color:var(--text-muted);">${t('tapToOpen')}</span>
+              </div>
+            </summary>
+            <div class="body">
+              ${paymentBanner}
+              <div class="kv-line"><span class="k">${t('address')}</span><span class="v" style="max-width:60%">${job.address}</span></div>
+              <div class="kv-line"><span class="k">${t('timeSlot')}</span><span class="v">${job.timeSlot}</span></div>
+              <div class="kv-line"><span class="k">${t('duration')}</span><span class="v">${job.durationMins} min</span></div>
+              ${job.instructions ? `<div class="kv-line"><span class="k">${t('notes')}</span><span class="v" style="max-width:60%">${job.instructions}</span></div>` : ''}
+              
+              <div class="kv-line"><span class="k">${t('base')}</span><span class="v">₹${job.base}</span></div>
+              <div class="kv-line"><span class="k">${t('bonus')}</span><span class="v" style="color:var(--green)">+₹${job.bonus}</span></div>
+              ${job.penalty ? `<div class="kv-line"><span class="k">${t('penalty')}</span><span class="v" style="color:var(--red)">-₹${job.penalty}</span></div>` : ''}
+              <div class="kv-line" style="border-top:2px solid var(--border);margin-top:6px;padding-top:6px;font-weight:800;">
+                <span class="k">${t('netEarnings')}</span>
+                <span class="v" style="color:var(--primary);font-size:16px;">₹${Store.netEarnings(job)}</span>
+              </div>
+
+              <div class="btn-group" style="margin:12px 0 8px;">
+                <a class="btn secondary sm" href="tel:${job.customerPhone}">${t('call')}</a>
+                <a class="btn secondary sm" href="${job.mapsLink}" target="_blank">${t('navigate')}</a>
+              </div>
+
+              ${actionArea}
+            </div>
+          </details>
+        `;
+      }).join('');
+    }
+
+    function renderProfile() {
+      const p = currentPartner;
+      document.getElementById('profileDetailsCard').innerHTML = `
+        <div class="kv-line"><span class="k">Name</span><span class="v">${p.name}</span></div>
+        <div class="kv-line"><span class="k">Partner ID</span><span class="v">${p.partnerId}</span></div>
+        <div class="kv-line"><span class="k">Mobile</span><span class="v">${p.phone}</span></div>
+        <div class="kv-line"><span class="k">Hub Zone</span><span class="v">${p.hub}</span></div>
+        <div class="kv-line"><span class="k">Account Status</span><span class="v"><span class="badge green">${p.status}</span></span></div>
+      `;
+    }
+
+    function startJob(jobId) {
+      Store.updateJobStatus(jobId, 'Started');
+      renderJobs();
+    }
+
+    function completeJob(jobId) {
+      Store.updateJobStatus(jobId, 'Completed');
+      renderJobs();
+    }
+
+    function changePinPrompt() {
+      const newPin = prompt('Enter new 4-digit PIN:');
+      if (newPin && newPin.trim().length >= 4) {
+        currentPartner.pin = newPin.trim();
+        alert('PIN updated successfully!');
+      }
+    }
+  </script>
+</body>
+</html>

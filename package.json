@@ -1,0 +1,18 @@
+{
+  "name": "purplerush-platform",
+  "version": "2.0.0",
+  "description": "Purplerush: BlooRush Automated Cleaning Booking, Field Partner App, and Ops Dispatch",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "bloorush",
+    "purplerush",
+    "automated-dispatch",
+    "partnerflow"
+  ],
+  "author": "BlooRush Ventures",
+  "license": "UNLICENSED"
+}

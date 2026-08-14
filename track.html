@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>BlooRush — Real-time Service Tracking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <a href="index.html" class="brand-badge">
+        <span>BlooRush</span>
+        <span class="brand-tag">Live Track</span>
+      </a>
+      <div class="nav-links">
+        <a href="customer.html" class="nav-btn">+ Book</a>
+        <a href="index.html" class="nav-btn">Hub</a>
+      </div>
+    </header>
+
+    <div style="padding: 20px 18px 60px;">
+      <div class="card" style="padding:12px 16px;">
+        <label for="trackJobId" style="margin-bottom:4px;">Tracking Booking Reference:</label>
+        <div style="display:flex;gap:8px;">
+          <input id="trackJobId" placeholder="JOB101 or BR-948210" style="padding:8px 12px;font-weight:700;" />
+          <button class="btn sm" onclick="searchJob()">Search</button>
+        </div>
+      </div>
+
+      <div id="trackContent"></div>
+    </div>
+  </div>
+
+  <script src="services.js"></script>
+  <script src="data.js"></script>
+  <script>
+    let currentJobId = null;
+    let timerInterval = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+      if (id) {
+        currentJobId = id;
+      } else {
+        const jobs = Store.getJobs();
+        currentJobId = jobs.length > 0 ? jobs[0].jobId : 'JOB101';
+      }
+      document.getElementById('trackJobId').value = currentJobId;
+      renderTrackView();
+
+      Store.subscribe(() => {
+        renderTrackView();
+      });
+
+      timerInterval = setInterval(updateLiveTimer, 1000);
+    });
+
+    function searchJob() {
+      const input = document.getElementById('trackJobId').value.trim();
+      if (input) {
+        currentJobId = input;
+        renderTrackView();
+      }
+    }
+
+    function elapsedFormatted(startIso, endIso) {
+      if (!startIso) return '00:00:00';
+      const end = endIso ? new Date(endIso).getTime() : Date.now();
+      let s = Math.max(0, Math.floor((end - new Date(startIso).getTime()) / 1000));
+      const h = String(Math.floor(s / 3600)).padStart(2, '0');
+      const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+      const sec = String(s % 60).padStart(2, '0');
+      return `${h}:${m}:${sec}`;
+    }
+
+    function renderTrackView() {
+      const container = document.getElementById('trackContent');
+      const job = Store.getJob(currentJobId);
+
+      if (!job) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center;padding:40px 20px;">
+            <div style="font-size:36px;margin-bottom:10px;">🔍</div>
+            <h3>Booking Not Found</h3>
+            <p class="sub">Could not find a booking for ID "${currentJobId}".</p>
+            <a href="customer.html" class="btn" style="width:auto;margin:0 auto;">Book New Service</a>
+          </div>
+        `;
+        return;
+      }
+
+      const partner = job.partnerId ? Store.getPartner(job.partnerId) : null;
+      const step1Done = true;
+      const step2Done = !!job.partnerId;
+      const step3Done = job.status === 'Started' || job.status === 'Completed';
+      const step4Done = job.status === 'Completed';
+
+      let statusHeadline = 'Partner Assigned';
+      let statusSub = 'Your verified cleaning partner is scheduled to arrive.';
+      let statusBadge = `<span class="badge blue">Assigned</span>`;
+
+      if (job.status === 'Unassigned') {
+        statusHeadline = 'Matching Partner';
+        statusSub = 'Our automated dispatch engine is finding an available partner in your hub.';
+        statusBadge = `<span class="badge amber">Matching</span>`;
+      } else if (job.status === 'Started') {
+        statusHeadline = 'Service in Progress 🧹';
+        statusSub = 'Your cleaning partner is currently executing the service.';
+        statusBadge = `<span class="badge amber">In Progress</span>`;
+      } else if (job.status === 'Completed') {
+        statusHeadline = 'Service Completed 🎉';
+        statusSub = 'Cleaning has concluded. Thank you for choosing BlooRush!';
+        statusBadge = `<span class="badge green">Completed</span>`;
+      }
+
+      let partnerCardHtml = '';
+      if (partner) {
+        partnerCardHtml = `
+          <div class="card highlight">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="width:48px;height:48px;border-radius:999px;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;">
+                ${partner.name.charAt(0)}
+              </div>
+              <div style="flex:1;">
+                <div style="font-weight:800;font-size:16px;">${partner.name}</div>
+                <div style="font-size:13px;color:var(--text-muted);">${partner.partnerId} · ${partner.hub}</div>
+              </div>
+              <a class="btn sm secondary" href="tel:${partner.phone}">📞 Call</a>
+            </div>
+          </div>
+        `;
+      } else {
+        partnerCardHtml = `
+          <div class="card" style="background:#fffbeb;border-color:#fde68a;">
+            <div style="font-size:14px;color:#92400e;font-weight:600;">
+              ⏳ Auto-dispatch in progress: Locating available field partners in ${job.hub || 'your hub'}...
+            </div>
+          </div>
+        `;
+      }
+
+      let ratingBoxHtml = '';
+      if (job.status === 'Completed') {
+        const currentRating = job.rating || 0;
+        ratingBoxHtml = `
+          <div class="card highlight" style="text-align:center;padding:20px 16px;">
+            <h3>Rate Your Experience</h3>
+            <p class="sub" style="margin-bottom:8px;">Your rating directly unlocks performance incentives for ${partner ? partner.name : 'your partner'}:</p>
+            <div class="star-rating">
+              ${[1, 2, 3, 4, 5].map(star => `
+                <button class="star-btn ${star <= currentRating ? 'active' : ''}" onclick="submitRating(${star})">★</button>
+              `).join('')}
+            </div>
+            ${currentRating ? `<div style="font-size:13px;font-weight:700;color:var(--green)">Thank you for rating ${currentRating} Stars!</div>` : ''}
+          </div>
+        `;
+      }
+
+      container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div style="font-weight:800;font-size:20px;">${statusHeadline}</div>
+            <div style="font-size:13px;color:var(--text-muted);">${statusSub}</div>
+          </div>
+          ${statusBadge}
+        </div>
+
+        ${job.status === 'Started' ? `
+          <div class="card" style="background:#f0fdf4;border-color:#bbf7d0;text-align:center;">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;color:var(--green);">Live Active Timer</div>
+            <div id="liveTimerBox" class="timer-display" style="background:transparent;padding:4px 0;margin:4px 0;color:var(--green);">
+              ${elapsedFormatted(job.startedAt)}
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);">Expected duration: ${job.durationMins} minutes</div>
+          </div>
+        ` : ''}
+
+        ${partnerCardHtml}
+
+        <div class="card">
+          <div class="stepper">
+            <div class="step-item ${step1Done ? 'done' : ''}">
+              <div class="step-dot">✓</div>
+              <div class="step-content">
+                <div class="step-title">Booking Confirmed</div>
+                <div class="step-sub">${job.bookingId} · ${job.date} (${job.timeSlot})</div>
+              </div>
+            </div>
+            <div class="step-item ${step2Done ? (step3Done ? 'done' : 'active') : ''}">
+              <div class="step-dot">${step2Done ? '✓' : '2'}</div>
+              <div class="step-content">
+                <div class="step-title">Partner Assigned</div>
+                <div class="step-sub">${partner ? `${partner.name} (${partner.partnerId})` : 'Smart matching in progress...'}</div>
+              </div>
+            </div>
+            <div class="step-item ${step3Done ? (step4Done ? 'done' : 'active') : ''}">
+              <div class="step-dot">${step3Done ? '✓' : '3'}</div>
+              <div class="step-content">
+                <div class="step-title">Service in Progress</div>
+                <div class="step-sub">${job.startedAt ? 'Partner on-site executing cleaning' : 'Awaiting arrival'}</div>
+              </div>
+            </div>
+            <div class="step-item ${step4Done ? 'done' : ''}">
+              <div class="step-dot">${step4Done ? '✓' : '4'}</div>
+              <div class="step-content">
+                <div class="step-title">Service Completed</div>
+                <div class="step-sub">${job.endedAt ? 'All tasks finished & verified' : 'Final inspection'}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${ratingBoxHtml}
+
+        <div class="card">
+          <h3>Order Details</h3>
+          <div class="kv-line"><span class="k">Customer</span><span class="v">${job.customerName}</span></div>
+          <div class="kv-line"><span class="k">Phone</span><span class="v">${job.customerPhone}</span></div>
+          <div class="kv-line"><span class="k">Address</span><span class="v" style="max-width:60%">${job.address}</span></div>
+          <div class="kv-line"><span class="k">Services</span><span class="v" style="max-width:60%">${job.service}</span></div>
+          <div class="kv-line"><span class="k">Payment</span><span class="v">${job.paymentStatus === 'paid' ? '✅ Paid Online' : '💵 Cash on Delivery (₹' + job.customerPrice + ')'}</span></div>
+          <div class="kv-line"><span class="k">Total Bill</span><span class="v" style="font-size:16px;color:var(--primary)">₹${job.customerPrice}</span></div>
+        </div>
+      `;
+    }
+
+    function updateLiveTimer() {
+      const job = Store.getJob(currentJobId);
+      if (job && job.status === 'Started') {
+        const el = document.getElementById('liveTimerBox');
+        if (el) el.textContent = elapsedFormatted(job.startedAt);
+      }
+    }
+
+    function submitRating(stars) {
+      Store.submitCustomerRating(currentJobId, stars);
+      renderTrackView();
+    }
+  </script>
+</body>
+</html>

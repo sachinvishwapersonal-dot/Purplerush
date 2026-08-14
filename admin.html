@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>BlooRush — Operations Dispatch &amp; Automation Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="wide-container">
+    <header class="header" style="border-radius:var(--radius-md);margin-bottom:20px;">
+      <a href="index.html" class="brand-badge">
+        <span>BlooRush</span>
+        <span class="brand-tag" style="background:#fef3c7;color:#92400e;">Ops Hub</span>
+      </a>
+      <div id="adminNav" class="nav-links">
+        <a href="customer.html" target="_blank" class="nav-btn">+ Test Customer Booking</a>
+        <a href="partner.html" target="_blank" class="nav-btn">👷 Open Partner App</a>
+        <button class="nav-btn" onclick="resetDemo()">🔄 Reset Demo Data</button>
+      </div>
+    </header>
+
+    <div class="stats-grid" id="opsStatsGrid"></div>
+
+    <div class="tabs-bar">
+      <button class="tab-btn active" id="tabOpsBtn" onclick="switchAdminTab('ops')">📊 Operations &amp; Jobs</button>
+      <button class="tab-btn" id="tabFeedBtn" onclick="switchAdminTab('feed')">⚡ Live Automation Feed &amp; WhatsApp</button>
+      <button class="tab-btn" id="tabAttendanceBtn" onclick="switchAdminTab('attendance')">🟢 Partner Attendance</button>
+      <button class="tab-btn" id="tabPartnersBtn" onclick="switchAdminTab('partners')">👷 Partner Onboarding</button>
+    </div>
+
+    <div id="tabOps">
+      <div class="desktop-grid">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h2>Live Jobs Stream</h2>
+            <input type="date" id="filterDate" style="width:auto;padding:6px 12px;font-size:13px;" onchange="renderJobs()" />
+          </div>
+          <div id="adminJobsList"></div>
+        </div>
+
+        <div>
+          <h2>Automated Dispatch Queue</h2>
+          <div class="card highlight">
+            <h3>⚡ Smart Auto-Dispatch Engine Active</h3>
+            <p class="sub" style="margin-bottom:10px;">
+              Customer orders placed on <a href="customer.html" target="_blank" style="color:var(--primary);font-weight:700;">customer.html</a> are automatically ingested, matched by Hub &amp; partner load, and dispatched in &lt; 1 second.
+            </p>
+            <div class="kv-line"><span class="k">Ingestion Channel</span><span class="v">Direct API / Firestore</span></div>
+            <div class="kv-line"><span class="k">Dispatch Policy</span><span class="v">Hub Match + Load Balancing</span></div>
+            <div class="kv-line"><span class="k">Partner Alert</span><span class="v">Instant WhatsApp Broadcast</span></div>
+          </div>
+
+          <h2>Manual Dispatch Override</h2>
+          <div class="card">
+            <p class="sub" style="margin-bottom:10px;">Manually create or reassign a job if needed:</p>
+            <div class="form-group">
+              <label>Customer Name</label>
+              <input id="mCustName" placeholder="e.g. Rahul Patil" />
+            </div>
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input id="mCustPhone" placeholder="9822000000" />
+            </div>
+            <div class="form-group">
+              <label>Address</label>
+              <input id="mCustAddress" placeholder="Dharampeth, Nagpur" />
+            </div>
+            <div class="form-group">
+              <label>Hub</label>
+              <select id="mCustHub"></select>
+            </div>
+            <div class="form-group">
+              <label>Assign to Partner</label>
+              <select id="mAssignPartner"></select>
+            </div>
+            <div class="form-group">
+              <label>Price (₹)</label>
+              <input id="mPrice" type="number" value="299" />
+            </div>
+            <button class="btn sm" onclick="createManualJob()">Create &amp; Assign Job</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabFeed" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div>
+          <h2>Real-Time Automated Event Stream</h2>
+          <p class="sub" style="margin-bottom:0;">Live logs of background dispatches, WhatsApp notifications, and customer ratings.</p>
+        </div>
+        <button class="btn sm secondary" onclick="clearFeedLogs()">Clear Feed</button>
+      </div>
+
+      <div class="activity-feed" id="activityFeedList"></div>
+    </div>
+
+    <div id="tabAttendance" style="display:none;">
+      <h2>Daily Partner Attendance Roster</h2>
+      <p class="sub">Partners marked "Present" are actively matched by the Auto-Dispatch engine.</p>
+      <div class="desktop-grid" id="attendanceRosterGrid"></div>
+    </div>
+
+    <div id="tabPartners" style="display:none;">
+      <div class="desktop-grid">
+        <div>
+          <h2>Onboard New Partner</h2>
+          <div class="card">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input id="newPName" placeholder="e.g. Ganesh Gaikwad" />
+            </div>
+            <div class="form-group">
+              <label>Mobile Number (used for login &amp; WhatsApp)</label>
+              <input id="newPPhone" placeholder="9876500009" />
+            </div>
+            <div class="form-group">
+              <label>Login PIN (4 digits)</label>
+              <input id="newPPin" placeholder="1234" value="1234" />
+            </div>
+            <div class="form-group">
+              <label>Assigned Hub Zone</label>
+              <select id="newPHub"></select>
+            </div>
+            <div class="form-group">
+              <label>Dashboard Language</label>
+              <select id="newPLang">
+                <option value="en">English</option>
+                <option value="hi">हिंदी (Hindi)</option>
+                <option value="mr">मराठी (Marathi)</option>
+              </select>
+            </div>
+            <button class="btn" onclick="onboardPartner()">Onboard Partner</button>
+            <div id="onboardMsg" style="margin-top:10px;font-size:13px;font-weight:700;"></div>
+          </div>
+        </div>
+
+        <div>
+          <h2>Active Partner Fleet</h2>
+          <div id="partnerFleetList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="services.js"></script>
+  <script src="data.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('filterDate').value = Store.today();
+      initDropdowns();
+      renderAll();
+
+      Store.subscribe(() => {
+        renderAll();
+      });
+    });
+
+    function initDropdowns() {
+      const hubOptions = HUBS.map(h => `<option value="${h}">${h}</option>`).join('');
+      document.getElementById('mCustHub').innerHTML = hubOptions;
+      document.getElementById('newPHub').innerHTML = hubOptions;
+      updatePartnerSelectDropdown();
+    }
+
+    function updatePartnerSelectDropdown() {
+      const partners = Store.getPartners();
+      document.getElementById('mAssignPartner').innerHTML = partners.map(p => `
+        <option value="${p.partnerId}">${p.name} (${p.partnerId} · ${p.hub})</option>
+      `).join('');
+    }
+
+    function switchAdminTab(tab) {
+      ['ops', 'feed', 'attendance', 'partners'].forEach(t => {
+        document.getElementById(`tab${capitalize(t)}`).style.display = t === tab ? 'block' : 'none';
+        document.getElementById(`tab${capitalize(t)}Btn`).className = `tab-btn ${t === tab ? 'active' : ''}`;
+      });
+    }
+
+    function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    function renderAll() {
+      renderKPIs();
+      renderJobs();
+      renderFeed();
+      renderAttendance();
+      renderFleet();
+      updatePartnerSelectDropdown();
+    }
+
+    function renderKPIs() {
+      const jobs = Store.getJobs().filter(j => j.date === Store.today());
+      const partners = Store.getPartners();
+      const present = partners.filter(p => p.attendanceDate === Store.today()).length;
+      const completed = jobs.filter(j => j.status === 'Completed');
+      
+      const revenue = completed.reduce((sum, j) => sum + (j.customerPrice || 0), 0);
+      const cashToCollect = jobs.filter(j => j.paymentStatus === 'cash' && j.status !== 'Completed').reduce((sum, j) => sum + (j.customerPrice || 0), 0);
+      const payout = completed.reduce((sum, j) => sum + Store.netEarnings(j), 0);
+
+      document.getElementById('opsStatsGrid').innerHTML = `
+        <div class="stat-box primary">
+          <div class="label">Today's Revenue</div>
+          <div class="value">₹${revenue.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Cash to Collect</div>
+          <div class="value">₹${cashToCollect.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Partner Payout</div>
+          <div class="value">₹${payout.toLocaleString('en-IN')}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Present Partners</div>
+          <div class="value">${present} / ${partners.length}</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Total Jobs Today</div>
+          <div class="value">${jobs.length}</div>
+        </div>
+      `;
+    }
+
+    function renderJobs() {
+      const container = document.getElementById('adminJobsList');
+      const date = document.getElementById('filterDate').value;
+      const jobs = Store.getJobs().filter(j => !date || j.date === date);
+
+      if (jobs.length === 0) {
+        container.innerHTML = `<div class="card" style="text-align:center;padding:24px;color:var(--text-muted);">No jobs on this date.</div>`;
+        return;
+      }
+
+      container.innerHTML = jobs.map(job => {
+        const partner = job.partnerId ? Store.getPartner(job.partnerId) : null;
+        let badge = `<span class="badge blue">Assigned</span>`;
+        if (job.status === 'Started') badge = `<span class="badge amber">In Progress</span>`;
+        if (job.status === 'Completed') badge = `<span class="badge green">Completed</span>`;
+        if (job.status === 'Unassigned') badge = `<span class="badge red">Unassigned</span>`;
+
+        return `
+          <details class="card">
+            <summary>
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                  <div style="font-weight:800;font-size:16px;">${job.customerName}</div>
+                  <div style="font-size:13px;color:var(--text-muted);">${job.service}</div>
+                </div>
+                ${badge}
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;">
+                <span><strong>${job.jobId}</strong> · ${partner ? partner.name : 'No Partner'}</span>
+                <span style="color:var(--primary);font-weight:700;">₹${job.customerPrice}</span>
+              </div>
+            </summary>
+            <div class="body">
+              <div class="kv-line"><span class="k">Booking ID</span><span class="v">${job.bookingId}</span></div>
+              <div class="kv-line"><span class="k">Phone</span><span class="v">${job.customerPhone}</span></div>
+              <div class="kv-line"><span class="k">Address</span><span class="v" style="max-width:60%">${job.address}</span></div>
+              <div class="kv-line"><span class="k">Slot / Hub</span><span class="v">${job.timeSlot} (${job.hub})</span></div>
+              <div class="kv-line"><span class="k">Payment</span><span class="v">${job.paymentStatus === 'paid' ? '✅ Paid Online' : '💵 Collect Cash (₹' + job.customerPrice + ')'}</span></div>
+              <div class="kv-line"><span class="k">Partner Payout</span><span class="v">₹${job.base} (base) + ₹${job.bonus} (bonus) = <strong>₹${Store.netEarnings(job)}</strong></span></div>
+
+              <div style="margin:12px 0 6px;">
+                <label>Status Override</label>
+                <select onchange="Store.updateJobStatus('${job.jobId}', this.value)">
+                  <option value="Assigned" ${job.status === 'Assigned' ? 'selected' : ''}>Assigned</option>
+                  <option value="Started" ${job.status === 'Started' ? 'selected' : ''}>Started (In Progress)</option>
+                  <option value="Completed" ${job.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                </select>
+              </div>
+
+              <div style="margin:10px 0 6px;">
+                <label>Customer Rating (Adjusts Bonus)</label>
+                <select onchange="Store.submitCustomerRating('${job.jobId}', this.value)">
+                  <option value="" ${job.rating == null ? 'selected' : ''}>Not rated yet (100% bonus)</option>
+                  <option value="5" ${job.rating === 5 ? 'selected' : ''}>5 ★ (100% bonus)</option>
+                  <option value="4" ${job.rating === 4 ? 'selected' : ''}>4 ★ (100% bonus)</option>
+                  <option value="3" ${job.rating === 3 ? 'selected' : ''}>3 ★ (70% bonus)</option>
+                  <option value="2" ${job.rating === 2 ? 'selected' : ''}>2 ★ (40% bonus)</option>
+                  <option value="1" ${job.rating === 1 ? 'selected' : ''}>1 ★ (0% bonus)</option>
+                </select>
+              </div>
+
+              <div style="margin-top:12px;display:flex;gap:8px;">
+                <a href="track.html?id=${job.jobId}" target="_blank" class="btn sm secondary">Live Track Page</a>
+                <button class="btn sm secondary" style="color:var(--red)" onclick="deleteJob('${job.jobId}')">Delete</button>
+              </div>
+            </div>
+          </details>
+        `;
+      }).join('');
+    }
+
+    function renderFeed() {
+      const container = document.getElementById('activityFeedList');
+      const logs = Store.getLogs();
+
+      if (logs.length === 0) {
+        container.innerHTML = `<div class="card" style="text-align:center;padding:24px;color:var(--text-muted);">No logs yet. Place an order on customer.html to see live dispatch!</div>`;
+        return;
+      }
+
+      container.innerHTML = logs.map(l => `
+        <div class="activity-item ${l.badge}">
+          <div class="header">
+            <span>${l.title}</span>
+            <span class="time">${new Date(l.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <div>${l.message}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderAttendance() {
+      const container = document.getElementById('attendanceRosterGrid');
+      const partners = Store.getPartners();
+
+      container.innerHTML = partners.map(p => {
+        const isPresent = p.attendanceDate === Store.today();
+        return `
+          <div class="card" style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:800;font-size:15px;">${p.name}</div>
+              <div style="font-size:13px;color:var(--text-muted);">${p.partnerId} · ${p.hub} · +91 ${p.phone}</div>
+            </div>
+            <button class="btn sm ${isPresent ? 'green' : 'secondary'}" onclick="Store.setAttendance('${p.partnerId}', ${!isPresent})">
+              ${isPresent ? '🟢 Present' : '⚪ Absent'}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderFleet() {
+      const container = document.getElementById('partnerFleetList');
+      const partners = Store.getPartners();
+
+      container.innerHTML = partners.map(p => `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:800;font-size:16px;">${p.name} (${p.partnerId})</div>
+              <div style="font-size:13px;color:var(--text-muted);">${p.phone} · ${p.hub} · Lang: ${p.language.toUpperCase()}</div>
+            </div>
+            <span class="badge ${p.status === 'Active' ? 'green' : 'gray'}">${p.status}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function onboardPartner() {
+      const name = document.getElementById('newPName').value.trim();
+      const phone = document.getElementById('newPPhone').value.trim();
+      const pin = document.getElementById('newPPin').value.trim();
+      const hub = document.getElementById('newPHub').value;
+      const lang = document.getElementById('newPLang').value;
+      const msg = document.getElementById('onboardMsg');
+
+      if (!name || !phone) {
+        msg.style.color = 'var(--red)';
+        msg.textContent = 'Name and phone number are required.';
+        return;
+      }
+
+      const p = Store.addPartner({ name, phone, pin, hub, language: lang });
+      msg.style.color = 'var(--green)';
+      msg.textContent = `✅ Partner ${p.name} (${p.partnerId}) onboarded successfully!`;
+      document.getElementById('newPName').value = '';
+      document.getElementById('newPPhone').value = '';
+    }
+
+    function createManualJob() {
+      const name = document.getElementById('mCustName').value.trim();
+      const phone = document.getElementById('mCustPhone').value.trim();
+      const address = document.getElementById('mCustAddress').value.trim();
+      const hub = document.getElementById('mCustHub').value;
+      const price = Number(document.getElementById('mPrice').value) || 299;
+
+      if (!name || !address) {
+        alert('Please provide name and address.');
+        return;
+      }
+
+      Store.createCustomerOrder({
+        customerName: name,
+        customerPhone: phone || '9800000000',
+        address: address,
+        hub: hub,
+        services: [{ id: "mopsweep", name: "Mopping & Sweeping", tierIndex: 0, tierLabel: "1 BHK", price: price, minutes: 30, tierCategory: "standard" }],
+        customerPrice: price,
+        timeSlot: "10:00 AM - 11:30 AM",
+        paymentStatus: "paid"
+      });
+
+      alert('Job created and dispatched!');
+      document.getElementById('mCustName').value = '';
+      document.getElementById('mCustAddress').value = '';
+    }
+
+    function deleteJob(jobId) {
+      if (confirm(`Delete job ${jobId}?`)) {
+        Store.deleteJob(jobId);
+      }
+    }
+
+    function clearFeedLogs() {
+      Store.clearLogs();
+    }
+
+    function resetDemo() {
+      if (confirm('Reset all demo jobs, logs, and partner rosters to default initial state?')) {
+        Store.resetToDemoData();
+      }
+    }
+  </script>
+</body>
+</html>

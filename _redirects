@@ -1,0 +1,6 @@
+/book          /customer.html   200
+/customer      /customer.html   200
+/track         /track.html      200
+/partner       /partner.html    200
+/admin         /admin.html      200
+/ops           /admin.html      200
